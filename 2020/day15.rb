@@ -5,11 +5,6 @@ starting_numbers = input.first.split(",").map(&:to_i)
 last_two_turns_spoken = []
 last_spoken_number = nil
 current_turn = 1
-# starting_numbers.each do |number|
-#   last_two_turns_spoken[number] = [current_turn]
-#   last_spoken_number = number
-#   current_turn += 1
-# end
 while true
   # Determine the number to speak (store in last_spoken_number)
   if starting_numbers.any?
