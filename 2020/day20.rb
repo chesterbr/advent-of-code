@@ -161,7 +161,7 @@ map_width = map_image.first.length
 roughness = nil
 0.upto(3) do |rotations|
   0.upto(1) do |flips|
-    current_image = map_image.clone.map(&:join)
+    current_image = map_image.map(&:join)
     monsters = []
     0.upto(map_height - sea_monster_height) do |y|
       0.upto(map_width - sea_monster_width) do |x|
