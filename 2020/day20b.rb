@@ -40,6 +40,38 @@ def tile_for(id)
   tile
 end
 
+def remove_border(tile)
+  tile[1..tile.count-2].map do |line|
+    line[1..line.count-2]
+  end
+end
+
+def neighbours_of(id)
+  prefix = id.to_i.to_s
+  tile = tile_for(id)
+  {
+    left:   @borders[:right][borders_of(tile)[:left]].clone,
+    right:  @borders[:left][borders_of(tile)[:right]].clone,
+    bottom: @borders[:top][borders_of(tile)[:bottom]].clone,
+    top:    @borders[:bottom][borders_of(tile)[:top]].clone,
+  }.each do |direction, list|
+    list.reject!{ |neighbour_id| neighbour_id.start_with?(prefix) }
+  end
+end
+
+# Recursively fill the @map array, by starting at a point (x, y) for
+# which we know the correct transformed tile (id), and going towards
+# given horizontal and vertical directions (dx, dy)
+def fill(x, y, dx, dy, id)
+  return if (x < 0 || y < 0 || x > @map_size - 1 || y > @map_size - 1 || @map[y][x])
+  @map[y][x] = id
+  neighbours = neighbours_of(id)
+  new_x_tile = neighbours[dx == 1 ? :right : :left].first
+  new_y_tile = neighbours[dy == 1 ? :bottom : :top].first
+  fill(x + dx, y, dx, dy, new_x_tile)
+  fill(x, y + dy, dx, dy, new_y_tile)
+end
+
 # This collection is just the parsed input (keys are the original IDs,
 # values are the tiles as an array of arrays of 1-character strings)
 @tiles = {}
@@ -74,65 +106,28 @@ input.append("").each do |line|
   end
 end
 
-def remove_border(tile)
-  tile[1..tile.count-2].map do |line|
-    line[1..line.count-2]
-  end
-end
-
-def neighbours_of(id)
-  prefix = id.to_i.to_s
-  tile = tile_for(id)
-  {
-    left:   @borders[:right][borders_of(tile)[:left]].clone,
-    right:  @borders[:left][borders_of(tile)[:right]].clone,
-    bottom: @borders[:top][borders_of(tile)[:bottom]].clone,
-    top:    @borders[:bottom][borders_of(tile)[:top]].clone,
-  }.each do |direction, list|
-    list.reject!{ |neighbour_id| neighbour_id.start_with?(prefix) }
-  end
-end
-
-def fill(x, y, dx, dy, id)
-  return if (x < 0 || y < 0 || x > @map_size - 1 || y > @map_size - 1 || @map[y][x])
-  @map[y][x] = id
-  neighbours = neighbours_of(id)
-  new_x_tile = neighbours[dx == 1 ? :right : :left].first
-  new_y_tile = neighbours[dy == 1 ? :bottom : :top].first
-  fill(x + dx, y, dx, dy, new_x_tile)
-  fill(x, y + dy, dx, dy, new_y_tile)
-end
-
+# Build the map starting from an arbitrary corner (any of the original
+# tiles that contains no neighbour in two directions, like a puzzle
+# corner) and recursively filling in towards the middle.
+# The result is an array of arrays of transformed tile ids.
 @map_size = Math.sqrt(@tiles.count).to_i
 @map = Array.new(@map_size).map { Array.new(@map_size) }
-
-used_tile_numbers = Set.new
 x = nil
 y = nil
 @tiles.each do |id_prefix, tile|
   neighbours = neighbours_of("#{id_prefix}-0-0")
-  # A tile with two neighbour-less directions is a corner
   if neighbours.values.count([]) == 2
-    # Figure out which corner it is, and place it accordingly
-    if neighbours[:right].any?
-      x = 0
-      dx = 1
-    else
-      x = @map_size - 1
-      dx = -1
-    end
-    if neighbours[:bottom].any?
-      y = 0
-      dy = 1
-    else
-      y = @map_size - 1
-      dy = -1
-    end
+    # Find the coordinates and fill direction for the tile's corner
+    # E.g., if it has no top and lef neighbours, place it on top/left
+    # (0, 0) and fill the other tiles towards bottom and right (1, 1)
+    x, dx = (neighbours[:right].any? ? [0, 1] : [@map_size - 1, -1])
+    y, dy = (neighbours[:bottom].any? ? [0, 1] : [@map_size - 1, -1])
     fill(x, y, dx, dy, "#{id_prefix}-0-0")
     break
   end
 end
 
+# Using the tile ids, recreate the map as a giant tile (map_image)
 map_image = []
 @map.each do |line|
   tiles_for_line = line.map { |tile| remove_border(tile_for(tile)) }
@@ -141,42 +136,39 @@ map_image = []
   end
 end
 
+# Now let's hunt monsters. We start with the monster image
+# as an array of string lines, only replacing spaces with dots
 @sea_monster = <<-MONSTER.chomp.split("\n")
 ..................#.
 #....##....##....###
 .#..#..#..#..#..#...
 MONSTER
 
+# Prefix the monster so that the returned array strings
+# are regexps that match a monster at the given column
 def sea_monster_regexps(column)
   prefix = "." * column
   @sea_monster.map { |line| "^" + prefix + line }
 end
 
-@sea_monster.map do |line|
-  line.gsub(" ",".")
-end
-
+# Now we can hunt monsters! Look for them on each rotation/flip
+# of the map - when we find one with monsters, paint its "O"s on
+# the image, then count the remaining "#"s (roughness)
 sea_monster_height = @sea_monster.count
 sea_monster_width = @sea_monster.first.length
-
+map_height = map_image.count
+map_width = map_image.first.length
+roughness = nil
 0.upto(3) do |rotations|
   0.upto(1) do |flips|
     current_image = map_image.clone.map(&:join)
-    map_image_height = current_image.count
-    map_image_width = current_image.first.length
-
     monsters = []
-    0.upto(map_image_height - sea_monster_height) do |y|
-      0.upto(map_image_width - sea_monster_width) do |x|
-        match = true
+    0.upto(map_height - sea_monster_height) do |y|
+      0.upto(map_width - sea_monster_width) do |x|
         regexps = sea_monster_regexps(x)
-        0.upto(regexps.count - 1) do |i|
-          unless current_image[y + i].match?(regexps[i])
-            match = false
-            break
-          end
+        monsters << [y, x] if 0.upto(regexps.count - 1).all? do |i|
+          current_image[y + i].match?(regexps[i])
         end
-        monsters << [y, x] if match
       end
     end
     unless monsters.empty?
@@ -184,17 +176,18 @@ sea_monster_width = @sea_monster.first.length
       monsters.each do |y, x|
         0.upto(sea_monster_height - 1) do |i|
           0.upto(sea_monster_width - 1) do |j|
-            if @sea_monster[i][j] == "#"
-              current_image[y + i][x + j] = "O"
-            end
+            current_image[y + i][x + j] = "O" if @sea_monster[i][j] == "#"
           end
         end
       end
-      puts current_image
-      puts current_image.join.count("#")
+      roughness = current_image.join.count("#")
+      break
     end
     map_image = flip(map_image)
   end
   map_image = rotate(map_image)
 end
+
+# Part 2
+puts roughness
 
