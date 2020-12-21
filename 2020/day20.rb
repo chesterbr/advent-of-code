@@ -181,6 +181,9 @@ roughness = nil
         end
       end
       roughness = current_image.join.count("#")
+      # Uncomment to see the map with the monsters
+      # (print won't work after coloring)
+      # puts current_image
       break
     end
     map_image = flip(map_image)
