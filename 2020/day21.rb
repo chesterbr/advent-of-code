@@ -26,7 +26,6 @@ ingredients_that_can_have_allergens = pairs_in_lines.reduce(&:+).map(&:first).un
 ingredients_with_no_allergens = known_ingredients - ingredients_that_can_have_allergens
 
 # Part 1
-
 count = 0
 ingredients_with_no_allergens.each do |ingredient|
   count += input.count { |line| line[:ingredients].include? ingredient }
