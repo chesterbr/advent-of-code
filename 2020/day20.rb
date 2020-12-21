@@ -21,6 +21,7 @@ def borders_of(tile)
   }
 end
 
+# For debugging purposes (also works with @map_image)
 def print(tile)
   puts tile.map(&:join)
 end
@@ -70,6 +71,20 @@ def fill(x, y, dx, dy, id)
   new_y_tile = neighbours[dy == 1 ? :bottom : :top].first
   fill(x + dx, y, dx, dy, new_x_tile)
   fill(x, y + dy, dx, dy, new_y_tile)
+end
+
+# Just replaced spaces with dots in the original monster image
+SEA_MONSTER = <<-MONSTER.chomp.split("\n")
+..................#.
+#....##....##....###
+.#..#..#..#..#..#...
+MONSTER
+
+# Returns an array whose strings are are regexps that
+# match a monster at the given column
+def sea_monster_regexps(column)
+  prefix = "." * column
+  SEA_MONSTER.map { |line| "^" + prefix + line }
 end
 
 # This collection is just the parsed input (keys are the original IDs,
@@ -136,26 +151,11 @@ map_image = []
   end
 end
 
-# Now let's hunt monsters. We start with the monster image
-# as an array of string lines, only replacing spaces with dots
-@sea_monster = <<-MONSTER.chomp.split("\n")
-..................#.
-#....##....##....###
-.#..#..#..#..#..#...
-MONSTER
-
-# Prefix the monster so that the returned array strings
-# are regexps that match a monster at the given column
-def sea_monster_regexps(column)
-  prefix = "." * column
-  @sea_monster.map { |line| "^" + prefix + line }
-end
-
 # Now we can hunt monsters! Look for them on each rotation/flip
 # of the map - when we find one with monsters, paint its "O"s on
 # the image, then count the remaining "#"s (roughness)
-sea_monster_height = @sea_monster.count
-sea_monster_width = @sea_monster.first.length
+sea_monster_height = SEA_MONSTER.count
+sea_monster_width = SEA_MONSTER.first.length
 map_height = map_image.count
 map_width = map_image.first.length
 roughness = nil
@@ -176,7 +176,7 @@ roughness = nil
       monsters.each do |y, x|
         0.upto(sea_monster_height - 1) do |i|
           0.upto(sea_monster_width - 1) do |j|
-            current_image[y + i][x + j] = "O" if @sea_monster[i][j] == "#"
+            current_image[y + i][x + j] = "O" if SEA_MONSTER[i][j] == "#"
           end
         end
       end
