@@ -4,19 +4,13 @@
 require "set"
 input = File.readlines("input", chomp:true)
 
-def to_dec(border)
-  border.gsub(".", "0").gsub("#","1").to_i(2)
-end
-
-def rotate_right(tile)
+def rotate(tile)
   tile.transpose.map(&:reverse)
 end
 
-def flip_h(tile)
-  tile.map(&:reverse)
-end
-
-def flip_v(tile)
+# We only need to flip one direction (the other is covered by
+# rotating and flip). Chose vertical because it's simper
+def flip(tile)
   tile.reverse
 end
 
@@ -30,15 +24,9 @@ def borders_of(tile)
   }
 end
 
-def connect_v?(top_tile_id, bottom_tile_id)
-  borders_of(tiles[top_tile_id])[:bottom] == borders_of(tiles[bottom_tile_id])[:top]
-end
-
 def print(tile)
   puts tile.map(&:join)
 end
-
-DIRECTIONS = %i(top right bottom left)
 
 # key is index-rotations-flips, value is tile as 2-d array
 tiles = {}
@@ -61,14 +49,14 @@ input.append("").each do |line|
     # as flipping the other is handled by rotating-then-flipping)
     0.upto(3) do |rotations|
       0.upto(1) do |flips|
-        DIRECTIONS.each do |direction|
+        %i(top right bottom left).each do |direction|
           border = borders_of(tile)[direction]
           borders[direction][border] ||= []
           borders[direction][border] << "#{id}-#{rotations}-#{flips}"
         end
-        tile = flip_h(tile)
+        tile = flip(tile)
       end
-      tile = rotate_right(tile)
+      tile = rotate(tile)
     end
   end
 end
@@ -77,10 +65,10 @@ def tile_for(id)
   prefix, rotations, flips = id.split("-").map(&:to_i)
   tile = @tiles[prefix].clone.map(&:clone)
   rotations.times do
-    tile = rotate_right(tile)
+    tile = rotate(tile)
   end
   flips.times do
-    tile = flip_h(tile)
+    tile = flip(tile)
   end
   tile
 end
@@ -121,7 +109,6 @@ map = Array.new(map_size).map { Array.new(map_size) }
 @borders = borders
 @tiles = tiles
 
-
 used_tile_numbers = Set.new
 x = nil
 y = nil
@@ -149,8 +136,6 @@ tiles.each do |id_prefix, tile|
   end
 end
 
-puts @map.inspect
-
 map_image = []
 @map.each do |line|
   tiles_for_line = line.map { |tile| remove_border(tile_for(tile)) }
@@ -158,7 +143,6 @@ map_image = []
     map_image << tiles_for_line.map { |tile| tile[i] }.reduce(&:+)
   end
 end
-
 
 @sea_monster = <<-MONSTER.chomp.split("\n")
 ..................#.
@@ -175,10 +159,8 @@ end
   line.gsub(" ",".")
 end
 
-
 sea_monster_height = @sea_monster.count
 sea_monster_width = @sea_monster.first.length
-
 
 0.upto(3) do |rotations|
   0.upto(1) do |flips|
@@ -214,8 +196,8 @@ sea_monster_width = @sea_monster.first.length
       puts current_image
       puts current_image.join.count("#")
     end
-    map_image = flip_h(map_image)
+    map_image = flip(map_image)
   end
-  map_image = rotate_right(map_image)
+  map_image = rotate(map_image)
 end
 
