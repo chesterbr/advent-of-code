@@ -73,6 +73,20 @@ def fill(x, y, dx, dy, id)
   fill(x, y + dy, dx, dy, new_y_tile)
 end
 
+# Just replaced spaces with dots in the original monster image
+SEA_MONSTER = <<-MONSTER.chomp.split("\n")
+..................#.
+#....##....##....###
+.#..#..#..#..#..#...
+MONSTER
+
+# Returns an array whose strings are are regexps that
+# match a monster at the given column
+def sea_monster_regexps(column)
+  prefix = "." * column
+  SEA_MONSTER.map { |line| "^" + prefix + line }
+end
+
 # This collection is just the parsed input (keys are the original IDs,
 # values are the tiles as an array of arrays of 1-character strings)
 @tiles = {}
@@ -135,21 +149,6 @@ map_image = []
   0.upto(tiles_for_line.first.count - 1) do |i|
     map_image << tiles_for_line.map { |tile| tile[i] }.reduce(&:+)
   end
-end
-
-# Now let's hunt monsters. We start with the monster image
-# as an array of string lines, only replacing spaces with dots
-@sea_monster = <<-MONSTER.chomp.split("\n")
-..................#.
-#....##....##....###
-.#..#..#..#..#..#...
-MONSTER
-
-# Prefix the monster so that the returned array strings
-# are regexps that match a monster at the given column
-def sea_monster_regexps(column)
-  prefix = "." * column
-  @sea_monster.map { |line| "^" + prefix + line }
 end
 
 # Now we can hunt monsters! Look for them on each rotation/flip
