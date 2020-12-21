@@ -47,7 +47,7 @@ end
 # A "border" is a string with the joined characters (e.g., "#...#.##").
 # For each direction and border, this lists the IDs of transformed
 # tiles that contain the border in that direction.
-borders =  { top: {}, right: {}, bottom: {}, left: {} }
+@borders =  { top: {}, right: {}, bottom: {}, left: {} }
 
 # Parse input into tiles and borders
 original_id = nil
@@ -64,8 +64,8 @@ input.append("").each do |line|
       0.upto(1) do |flips|
         %i(top right bottom left).each do |direction|
           border = borders_of(tile)[direction]
-          borders[direction][border] ||= []
-          borders[direction][border] << "#{original_id}-#{rotations}-#{flips}"
+          @borders[direction][border] ||= []
+          @borders[direction][border] << "#{original_id}-#{rotations}-#{flips}"
         end
         tile = flip(tile)
       end
@@ -80,14 +80,14 @@ def remove_border(tile)
   end
 end
 
-def neighbours_of(id, borders)
+def neighbours_of(id)
   prefix = id.to_i.to_s
   tile = tile_for(id)
   {
-    left:   borders[:right][borders_of(tile)[:left]].clone,
-    right:  borders[:left][borders_of(tile)[:right]].clone,
-    bottom: borders[:top][borders_of(tile)[:bottom]].clone,
-    top:    borders[:bottom][borders_of(tile)[:top]].clone,
+    left:   @borders[:right][borders_of(tile)[:left]].clone,
+    right:  @borders[:left][borders_of(tile)[:right]].clone,
+    bottom: @borders[:top][borders_of(tile)[:bottom]].clone,
+    top:    @borders[:bottom][borders_of(tile)[:top]].clone,
   }.each do |direction, list|
     list.reject!{ |neighbour_id| neighbour_id.start_with?(prefix) }
   end
@@ -96,24 +96,21 @@ end
 def fill(x, y, dx, dy, id)
   return if (x < 0 || y < 0 || x > @map_size - 1 || y > @map_size - 1 || @map[y][x])
   @map[y][x] = id
-  neighbours = neighbours_of(id, @borders)
+  neighbours = neighbours_of(id)
   new_x_tile = neighbours[dx == 1 ? :right : :left].first
   new_y_tile = neighbours[dy == 1 ? :bottom : :top].first
   fill(x + dx, y, dx, dy, new_x_tile)
   fill(x, y + dy, dx, dy, new_y_tile)
 end
 
-map_size = Math.sqrt(@tiles.count).to_i
-map = Array.new(map_size).map { Array.new(map_size) }
-@map = map
-@map_size = map_size
-@borders = borders
+@map_size = Math.sqrt(@tiles.count).to_i
+@map = Array.new(@map_size).map { Array.new(@map_size) }
 
 used_tile_numbers = Set.new
 x = nil
 y = nil
 @tiles.each do |id_prefix, tile|
-  neighbours = neighbours_of("#{id_prefix}-0-0", borders)
+  neighbours = neighbours_of("#{id_prefix}-0-0")
   # A tile with two neighbour-less directions is a corner
   if neighbours.values.count([]) == 2
     # Figure out which corner it is, and place it accordingly
@@ -121,14 +118,14 @@ y = nil
       x = 0
       dx = 1
     else
-      x = map_size - 1
+      x = @map_size - 1
       dx = -1
     end
     if neighbours[:bottom].any?
       y = 0
       dy = 1
     else
-      y = map_size - 1
+      y = @map_size - 1
       dy = -1
     end
     fill(x, y, dx, dy, "#{id_prefix}-0-0")
