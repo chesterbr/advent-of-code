@@ -1,6 +1,3 @@
-# This one was such a fight that I won't even bother cleaning up
-# (too tired for that)
-
 require "set"
 input = File.readlines("input", chomp:true)
 
@@ -28,42 +25,12 @@ def print(tile)
   puts tile.map(&:join)
 end
 
-# key is index-rotations-flips, value is tile as 2-d array
-tiles = {}
-
-# for each direction, a hash that maps borders
-# to transformed tile ids that have that border
-borders =  { top: {}, right: {}, bottom: {}, left: {} }
-
-id = nil
-tile = []
-input.append("").each do |line|
-  if line.start_with? "Tile"
-    id = line.split(" ").last.to_i
-    tile = []
-  elsif line != ""
-    tile << line.split("")
-  else
-    tiles[id] = tile
-    # Account all four rotations and flips (just one direction,
-    # as flipping the other is handled by rotating-then-flipping)
-    0.upto(3) do |rotations|
-      0.upto(1) do |flips|
-        %i(top right bottom left).each do |direction|
-          border = borders_of(tile)[direction]
-          borders[direction][border] ||= []
-          borders[direction][border] << "#{id}-#{rotations}-#{flips}"
-        end
-        tile = flip(tile)
-      end
-      tile = rotate(tile)
-    end
-  end
-end
-
+# The code only stores the original tiles, using this method to
+# retrieve the rotated/flipped ones. id is a string containing
+# the original input ID and number ("id-rotations-flips")
 def tile_for(id)
-  prefix, rotations, flips = id.split("-").map(&:to_i)
-  tile = @tiles[prefix].clone.map(&:clone)
+  original_id, rotations, flips = id.split("-").map(&:to_i)
+  tile = @tiles["#{original_id}-0-0"].clone.map(&:clone)
   rotations.times do
     tile = rotate(tile)
   end
@@ -71,6 +38,40 @@ def tile_for(id)
     tile = flip(tile)
   end
   tile
+end
+
+# This collection is just the parsed input (keys are the original IDs,
+# values are the tiles as an array of arrays of 1-character strings)
+@tiles = {}
+
+# A "border" is a string with the joined characters (e.g., "#...#.##").
+# For each direction and border, this lists the IDs of transformed
+# tiles that contain the border in that direction.
+borders =  { top: {}, right: {}, bottom: {}, left: {} }
+
+# Parse input into tiles and borders
+original_id = nil
+tile = []
+input.append("").each do |line|
+  if line.start_with? "Tile"
+    original_id = line.split(" ").last.to_i
+    tile = []
+  elsif line != ""
+    tile << line.split("")
+  else
+    @tiles["#{original_id}-0-0"] = tile
+    0.upto(3) do |rotations|
+      0.upto(1) do |flips|
+        %i(top right bottom left).each do |direction|
+          border = borders_of(tile)[direction]
+          borders[direction][border] ||= []
+          borders[direction][border] << "#{original_id}-#{rotations}-#{flips}"
+        end
+        tile = flip(tile)
+      end
+      tile = rotate(tile)
+    end
+  end
 end
 
 def remove_border(tile)
@@ -102,17 +103,16 @@ def fill(x, y, dx, dy, id)
   fill(x, y + dy, dx, dy, new_y_tile)
 end
 
-map_size = Math.sqrt(tiles.count).to_i
+map_size = Math.sqrt(@tiles.count).to_i
 map = Array.new(map_size).map { Array.new(map_size) }
 @map = map
 @map_size = map_size
 @borders = borders
-@tiles = tiles
 
 used_tile_numbers = Set.new
 x = nil
 y = nil
-tiles.each do |id_prefix, tile|
+@tiles.each do |id_prefix, tile|
   neighbours = neighbours_of("#{id_prefix}-0-0", borders)
   # A tile with two neighbour-less directions is a corner
   if neighbours.values.count([]) == 2
