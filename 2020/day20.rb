@@ -188,6 +188,15 @@ roughness = nil
   map_image = rotate(map_image)
 end
 
+# Part 1
+corner_original_ids = [
+  @map.first.first,
+  @map.first.last,
+  @map.last.first,
+  @map.last.last
+].map(&:to_i)
+puts corner_original_ids.reduce(:*)
+
 # Part 2
 puts roughness
 
