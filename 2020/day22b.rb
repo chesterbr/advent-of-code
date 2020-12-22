@@ -1,3 +1,4 @@
+require "set"
 input = File.readlines("input", chomp:true)
 
 pos = input.index("")
@@ -6,10 +7,11 @@ deck2 = input[pos + 2..].map(&:to_i)
 
 # true if deck1 wins, false if deck2 wins
 def recursive_combat(deck1, deck2)
-  rounds = []
+  rounds = Set.new
   while deck1.any? && deck2.any?
-    return true if rounds.include?([deck1, deck2])
-    rounds << [deck1.clone, deck2.clone]
+    round = deck1.join(",") + ";" + deck2.join(",")
+    return true if rounds.include?(round)
+    rounds << round
     c1, c2 = deck1.shift, deck2.shift
 
     if deck1.count >= c1 && deck2.count >= c2
