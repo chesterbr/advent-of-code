@@ -11,6 +11,25 @@ DELTAS = {
   "nw" => [-1, 0],
 }
 
+def to_tile(y, x)
+  y * 100000 + x
+end
+
+def to_coords(tile)
+  [tile / 100000, tile % 100000]
+end
+
+def adjacent_tiles(tile)
+  y, x = to_coords(tile)
+  DELTAS.values.map do |dy, dx|
+    to_tile(y + dy, x + dx)
+  end
+end
+
+def adjacent_black_count(tile, black_tiles)
+  adjacent_tiles(tile).count { |tile| black_tiles.any? tile }
+end
+
 black_tiles = Set.new
 input.each do |line|
   directions = line.scan(/(e|se|sw|w|nw|ne)/).map(&:first)
@@ -19,22 +38,11 @@ input.each do |line|
     y = y + DELTAS[direction][0]
     x = x + DELTAS[direction][1]
   end
-  if black_tiles.any?([y, x].join(","))
-    black_tiles.delete([y, x].join(","))
+  if black_tiles.any?(to_tile(y,x))
+    black_tiles.delete(to_tile(y,x))
   else
-    black_tiles << [y, x].join(",")
+    black_tiles << to_tile(y,x)
   end
-end
-
-def adjacent_tiles(tile)
-  y, x = tile.split(",").map(&:to_i)
-  DELTAS.values.map do |dy, dx|
-    [y + dy, x + dx].join(",")
-  end
-end
-
-def adjacent_black_count(tile, black_tiles)
-  adjacent_tiles(tile).count { |tile| black_tiles.any? tile }
 end
 
 1.upto(100) do |day|
