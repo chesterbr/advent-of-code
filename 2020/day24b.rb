@@ -12,16 +12,18 @@ DELTAS = {
 }
 
 def to_tile(y, x)
-  "#{y},#{x}"
+  "#{y},#{x}".to_sym
 end
 
 def to_coords(tile)
-  tile.split(",").map(&:to_i)
+  tile.to_s.split(",").map(&:to_i)
 end
 
+@adjacent_tiles = {}
 def adjacent_tiles(tile)
+  return @adjacent_tiles[tile] if @adjacent_tiles[tile]
   y, x = to_coords(tile)
-  DELTAS.values.map do |dy, dx|
+  @adjacent_tiles[tile] = DELTAS.values.map do |dy, dx|
     to_tile(y + dy, x + dx)
   end
 end
@@ -46,14 +48,17 @@ input.each do |line|
 end
 
 1.upto(100) do |day|
-  flip_to_white = []
-  flip_to_black = []
+  checked_adjacent_tiles = Set.new
+  flip_to_white = Set.new
+  flip_to_black = Set.new
   @black_tiles.each do |black_tile|
     count = adjacent_black_count(black_tile)
     if count == 0 || count > 2
       flip_to_white << black_tile
     end
     adjacent_tiles(black_tile).each do |potential_white_tile|
+      next if checked_adjacent_tiles.include? potential_white_tile
+      checked_adjacent_tiles << potential_white_tile
       next if @black_tiles.include? potential_white_tile
       if adjacent_black_count(potential_white_tile) == 2
         flip_to_black << potential_white_tile
