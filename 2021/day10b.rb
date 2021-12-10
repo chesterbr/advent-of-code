@@ -7,13 +7,6 @@ DELIMITERS = {
   "<" => ">",
 }
 
-POINTS_FOR_ILLEGAL_CHAR ={
-  ")" => 3,
-  "]" => 57,
-  "}" => 1197,
-  ">" => 25137,
-}
-
 scores = []
 input.each do |line|
   stack = []
