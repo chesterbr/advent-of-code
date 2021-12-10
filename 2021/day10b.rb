@@ -1,0 +1,42 @@
+input = File.readlines("input", chomp:true)
+
+DELIMITERS = {
+  "(" => ")",
+  "[" => "]",
+  "{" => "}",
+  "<" => ">",
+}
+
+POINTS_FOR_ILLEGAL_CHAR ={
+  ")" => 3,
+  "]" => 57,
+  "}" => 1197,
+  ">" => 25137,
+}
+
+scores = []
+input.each do |line|
+  stack = []
+  corrupted = false
+  line.split("").each do |char|
+    if DELIMITERS[char]
+      stack.push(char)
+    else
+      expected_char = DELIMITERS[stack.pop]
+      if char != expected_char
+        corrupted = true
+        break
+      end
+    end
+  end
+  unless corrupted
+    completion = stack.reverse.map { |char| DELIMITERS[char] }
+    score = completion.reduce(0) do |sum, char|
+      sum * 5 + "_)]}>".index(char)
+    end
+    puts " - #{line} - Complete by adding #{completion.join} - #{score} total points"
+    scores << score
+  end
+end
+
+puts scores.sort[scores.size / 2]
