@@ -13,9 +13,9 @@ input.each do |line|
   corrupted = false
   line.split("").each do |char|
     if DELIMITERS[char]
-      stack.push(char)
+      stack.push(DELIMITERS[char])
     else
-      expected_char = DELIMITERS[stack.pop]
+      expected_char = stack.pop
       if char != expected_char
         corrupted = true
         break
@@ -23,7 +23,7 @@ input.each do |line|
     end
   end
   unless corrupted
-    completion = stack.reverse.map { |char| DELIMITERS[char] }
+    completion = stack.reverse
     score = completion.reduce(0) do |sum, char|
       sum * 5 + "_)]}>".index(char)
     end
