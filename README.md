@@ -1,2 +1,2 @@
 # advent-of-code
-My (ugly, unoptimized) solutions for http://adventofcode.com/
+My (often unoptimized but readable) solutions for http://adventofcode.com/
